@@ -31,7 +31,9 @@ def main(argv):
     clientSocket = socket(AF_INET, SOCK_STREAM)
     clientSocket.connect((host, port))
 
-    print(host+" "+port)
+    print(str(host)+" "+str(port))
+
+    clientSocket.close()
 
 if __name__ == "__main__":
     main(sys.argv[1:])
