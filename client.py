@@ -6,6 +6,18 @@ def usage(erron):
 	print('usage:\tclient.py -h <host> -p <port#>')
 	print('      \tclient.py -H for help')
 	sys.exit()
+
+def dohelp():
+    print ("\nWelcome to tictactoe commands")
+    print("\nhelp: for help\n")
+    print('''login: this command takes one argument, your name. A player name is a userid that
+uniquely identifies a player\n
+place: this command issues a move. It takes one argument n, which is between 1 and 9 inclusive.
+It identify a cell that the player chooses to occupy at this move.\n
+exit: the player exits the game. It takes no argument. A player can issue this command at any
+time
+    ''')
+
 def main(argv):
     port = ''
     host = ''
@@ -26,15 +38,21 @@ def main(argv):
         port = int(port)
     except ValueError:
         usage(1)
-    userInput = input("$: ")
-    
+
+
     clientSocket = socket(AF_INET, SOCK_STREAM)
     clientSocket.connect((host, port))
+    userInput = input("$: ")
+    userInput = userInput.split(' ')
 
     print(str(host)+" "+str(port))
+    if(userInput[0] == 'help'):
+        dohelp()
 
     clientSocket.close()
 
 if __name__ == "__main__":
     main(sys.argv[1:])
+
+
 
