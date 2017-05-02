@@ -1,5 +1,7 @@
 from socket import *
 import sys, getopt
+import threading
+import time
 def usage(erron):
 	if(erron == 1):
 		print("Invalid input")
@@ -17,10 +19,43 @@ It identify a cell that the player chooses to occupy at this move.\n
 exit: the player exits the game. It takes no argument. A player can issue this command at any
 time
     ''')
+#To read user input from the stdin
+
+
+def stdin(buff):
+    buff = input("$:")
+    usrInput = buff.split(' ')
+    while (len(usrInput) > 2) :
+        print('Input cannot exceed two arguments. Please try again')
+        buff = input("$:")
+        usrInput = buff.split(' ')
+
+def server( sockect, buff):
+    buff = socket.recv(1024).decode()
+
+def sendDataToServer(socket, buff, log):
+    if(buff[0] == 'login'):
+        if (log != True):
+            socket.send(buff.encode())
+        else:
+            print("You are already logged in. Enter a different command")
+            stdin(buff)
+    elif (buff[0] == 'help'):
+        dohelp()
+    elif (buff[0] == 'exit'):
+        print('exiting ...')
+        sys.exit()
+    elif (buff[0] == 'place'):
+        socket.send(buff.encode())
+
+
 
 def main(argv):
     port = ''
     host = ''
+    userInput = ''
+    buffer = ''
+    logStatus = False
     try:
         opts, args = getopt.getopt(argv, "Hh:p:", ["help=", "port=", "host="])
         if (len(opts) < 1):
@@ -39,18 +74,19 @@ def main(argv):
     except ValueError:
         usage(1)
 
-
     clientSocket = socket(AF_INET, SOCK_STREAM)
     clientSocket.connect((host, port))
-    userInput = input("$: ")
+    stdin(userInput)
     userInput = userInput.split(' ')
-
-    print(str(host)+" "+str(port))
-    if(userInput[0] == 'help'):
-        dohelp()
-
+    sendDataToServer(clientSocket, userInput, logStatus)
+    logStatus = True
+    while (True):
+        stdinThread = threading.Thread(target=stdin, args=userInput)
+        serverThread = threading.Thread(target=server, args=(clientSocket, buffer))
+        stdinThread.start()
+        serverThread.start()
+        #sendDataToServer(clientSocket, userInput, logStatus)
     clientSocket.close()
-
 if __name__ == "__main__":
     main(sys.argv[1:])
 
