@@ -12,6 +12,7 @@
 # Client should check that the server did not send a 400 before allowing another command
 # gameState is also an int: (0 = no active game, 1 = player 1 turn, 2 = player 2 turn, 3 = game over)
 # message is an optional field to send info such as "user x is player 1" or "Invalid value for n"
+# take care not to put any ":" in the message, this may break the parser
 
 # gameplay should operate as follows:
 # client a: login
@@ -69,9 +70,7 @@ def ParseClientMessage(message):
 
 def ParseServerMessage(message):
 	split = message.split(":", message.count(':'))
-	ret = ServerMessage(split[0], split[1])
-	if split[2] is not None:
-		ret.status = int(split[2])
-	if split[3] is not None:
-		ret.gameState = int(split[3])
+	ret = ServerMessage(split[0], split[1], int(split[2]), int(split[3]))
+	if split[4] is not None:
+		ret.message = split[4]
 	return ret
