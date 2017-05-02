@@ -5,6 +5,7 @@ import argparse
 from sys import exit
 import select
 import _thread
+import re
 
 #GLOBAL LISTS OF CLIENT SOCKETS AND ADDRESSES
 #GLOBAL LIST OF CLIENT THREADS THAT ARE ACTIVE
@@ -28,18 +29,43 @@ def parse_args():
 
     return args.machine_name, args.port_number
 
+def clientLogin(connectionSocket):
+    select.select([connectionSocket], [], [])
+    buffer = connectionSocket.recv(1024).decode()
+
+    if buffer == 'WOLFIE':
+        connectionSocket.send('EIFLOW'.encode())
+    else:
+        print('This client failed to follow proper login protocol, closing socket and thread.')
+        connectionSocket.close()
+        exit()
+
 def handle_client(connectionSocket, addr):
+    #GO THROUGH LOGIN PROTOCOL WITH CLIENT FIRST
+    clientLogin(connectionSocket)
+
     while True:
         select.select([connectionSocket], [], [])
-        buffer = connectionSocket.recv(1024).decode()
 
+        try:
+            buffer = connectionSocket.recv(1024).decode()
+        except ConnectionResetError:
+            print('Client just disconnected, closing that connection socket now')
+            connectionSocket.close()
+            exit()
+
+        #CLIENT EXITING CASES
         if buffer == "EXIT":
             print("Exiting this thread")
             exit()
 
         elif buffer == "":
             print("Client just disconnected, closing that connection socket now.")
+            connectionSocket.close()
             exit()
+
+        elif re.match('LOGIN (a-zA-z)+', buffer):
+            print(buffer)
 
 
 

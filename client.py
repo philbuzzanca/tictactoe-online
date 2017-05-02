@@ -1,13 +1,8 @@
 from socket import *
-import sys, getopt
-import threading
-import time
-def usage(erron):
-	if(erron == 1):
-		print("Invalid input")
-	print('usage:\tclient.py -h <host> -p <port#>')
-	print('      \tclient.py -H for help')
-	sys.exit()
+import argparse
+from sys import exit, stdin, stdout
+import select
+import _thread
 
 def dohelp():
     print ("\nWelcome to tictactoe commands")
@@ -19,76 +14,86 @@ It identify a cell that the player chooses to occupy at this move.\n
 exit: the player exits the game. It takes no argument. A player can issue this command at any
 time
     ''')
-#To read user input from the stdin
 
+def sendToServer(clientSocket, sentence):
+    clientSocket.send(sentence.encode())
 
-def stdin(buff):
-    buff = input("$:")
-    usrInput = buff.split(' ')
-    while (len(usrInput) > 2) :
-        print('Input cannot exceed two arguments. Please try again')
-        buff = input("$:")
-        usrInput = buff.split(' ')
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Grab command line arguments for machine name/ip address and port_number")
+    parser.add_argument('-m', help="Machine name/ip address on which the server is.")
+    parser.add_argument('-p', type=int, help="Port number for the server.")
+    args = parser.parse_args()
 
-def server( sockect, buff):
-    buff = socket.recv(1024).decode()
+    if args.m == None:
+        print("No machine name given, exiting.")
+        exit()
+    if args.p == None:
+        print("No port number given, exiting.")
+        exit()
 
-def sendDataToServer(socket, buff, log):
-    if(buff[0] == 'login'):
-        if (log != True):
-            socket.send(buff.encode())
-        else:
-            print("You are already logged in. Enter a different command")
-            stdin(buff)
-    elif (buff[0] == 'help'):
-        dohelp()
-    elif (buff[0] == 'exit'):
-        print('exiting ...')
-        sys.exit()
-    elif (buff[0] == 'place'):
-        socket.send(buff.encode())
+    return args.m, args.p
 
+def login_procedure(clientSocket):
+    clientSocket.send('WOLFIE'.encode())
 
+    select.select([clientSocket], [], [], None)
+    serverPacket = clientSocket.recv(1024).decode()
 
-def main(argv):
-    port = ''
-    host = ''
-    userInput = ''
-    buffer = ''
-    logStatus = False
+    if serverPacket != 'EIFLOW':
+        print('Error in login procedure with server, shutting down client program now.')
+        exit()
+
+#IGNORE FLUFF, JUST THERE TO GET _thread.start_new TO WORK
+def serverHandler(clientSocket, fluff):
+    while True:
+        #SELECT AND WAIT ON CLIENT SOCKET
+        select.select([clientSocket], [], [], None)
+
+        serverPacket = clientSocket.recv(1024).decode()
+
+        print(serverPacket)
+
+def main():
+    #GRAB COMMAND LINE ARGUMENTS
+    serverName, serverPort = parse_args()
+
+    #TRY CATCH BLOCK IN CASE ERROR IN ESTABLISHING SOCKET
     try:
-        opts, args = getopt.getopt(argv, "Hh:p:", ["help=", "port=", "host="])
-        if (len(opts) < 1):
-            usage(1)
-    except getopt.GetoptError:
-        usage(1)
-    for opt, arg in opts:
-        if opt == '-H':
-            usage(0)
-        elif opt in ("-h", "--host"):
-            host = arg
-        elif opt in ("-p", "--port"):
-            port = arg
-    try:
-        port = int(port)
-    except ValueError:
-        usage(1)
+        #SET UP SOCKET AND CONNECTION WITH SERVER
+        clientSocket = socket(AF_INET, SOCK_STREAM)
+        clientSocket.connect((serverName, serverPort))
+    except:
+        print("Error establishing socket with server, exiting client program.")
+        exit()
 
-    clientSocket = socket(AF_INET, SOCK_STREAM)
-    clientSocket.connect((host, port))
-    stdin(userInput)
-    userInput = userInput.split(' ')
-    sendDataToServer(clientSocket, userInput, logStatus)
-    logStatus = True
-    while (True):
-        stdinThread = threading.Thread(target=stdin, args=userInput)
-        serverThread = threading.Thread(target=server, args=(clientSocket, buffer))
-        stdinThread.start()
-        serverThread.start()
-        #sendDataToServer(clientSocket, userInput, logStatus)
-    clientSocket.close()
+    #LOGIN PROCEDURE WITH SERVER FIRST BEFORE PROCEEDING
+    login_procedure(clientSocket)
+
+    #INITIALIZE A THREAD TO LISTEN ON INPUT FROM SERVER
+    server_thread = _thread.start_new(serverHandler, (clientSocket, ' '))
+
+    #THIS THREAD WILL JUST LISTEN ON STDIN
+    while True:
+        stdout.write('$:')
+        stdout.flush()
+        line = stdin.readline()
+
+        #REMOVE THE NEWLINE CHARACTER
+        line = line[0:-1]
+
+        if line == 'exit':
+            sendToServer(clientSocket, 'EXIT')
+            clientSocket.close()
+            exit()
+
+        elif line == 'help':
+            dohelp()
+
+
+
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()
 
 
 
