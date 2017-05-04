@@ -61,9 +61,7 @@ class ServerMessage:
 
 def ParseClientMessage(message):
 	split = message.split(":", message.count(':'))
-	ret = ClientMessage(split[0], split[1])
-	if split[2] is not None:
-		ret.command = split[2]
+	ret = ClientMessage(split[0], split[1], split[2])
 	if split[3] is not None:
 		ret.arg = split[3]
 	return ret
