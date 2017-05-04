@@ -29,7 +29,7 @@
 # Server->a,b: OK, game over (gamestate 3). Message = "Player x wins/draw/player left game"
 
 class ClientMessage:
-	def __init__(self, userid, destinationPort, command=None, arg=None):
+	def __init__(self, userid, destinationPort, command, arg=None):
 		self.userid = userid
 		self.destinationPort = destinationPort
 		self.command = command
