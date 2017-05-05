@@ -6,13 +6,45 @@ from sys import exit
 import select
 import _thread
 import re
+import array
+from protocol import ParseClientMessage, ServerMessage
+import threading
+
+#LOCKS FOR SHARED LISTS
+playerListLock = threading.Lock()
+
+#CLASSES FOR GAMES AND PLAYERS
+class Game(object):
+    player1 = None
+    player2 = None
+    board = None
+    turn = 1
+
+    def __init__(self, player1, player2):
+        self.player1 = player1
+        self.player2 = player2
+        self.board = array.array(0, (0 for i in range(0, 10)))
+
+class Player(object):
+    name = None
+    connectionSocket = None
+    isAvailable = False
+    autoMatch = False
+    playerNum = None
+    game = None
+
+
+    def __init__(self, name, connectionSocket):
+        self.name = name
+        self.connectionSocket = connectionSocket
 
 #GLOBAL LISTS OF CLIENT SOCKETS AND ADDRESSES
 #GLOBAL LIST OF CLIENT THREADS THAT ARE ACTIVE
+serverPort = None
 clientSockets = list()
 clientAddresses = list()
-clientNames = list()
-# clientThreads = list()
+playerList = list()
+gameList = list()
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Grab command line arguments for machine name/ip address and port_number")
@@ -40,9 +72,62 @@ def clientLogin(connectionSocket):
         connectionSocket.close()
         exit()
 
+def send(clientSocket, playerName, destinationPort, status, gameState, message):
+    message = ServerMessage(playerName, destinationPort, status, gameState, message)
+    clientSocket.send(message.encode())
+
+def clientExit(player, game):
+    playerListLock.acquire(blocking=True, timeout=-1)
+    playerList.remove(player)
+    playerListLock.release()
+
+    exit()
+
+def checkWinner(board):
+    #CHECK ROWS FIRST
+    if board[0] == 1 and board[1] == 1 and board[2] == 1:
+        return 2
+    elif board[0] == 2 and board[1] == 2 and board[2] == 2:
+        return 1
+    elif board[3] == 1 and board[4] == 1 and board[5] == 1:
+        return 2
+    elif board[3] == 2 and board[4] == 2 and board[5] == 2:
+        return 1
+    elif board[6] == 1 and board[7] == 1 and board[8] == 1:
+        return 2
+    elif board[6] == 2 and board[7] == 2 and board[8] == 2:
+        return 1
+
+    #CHECK COLUMNS NEXT
+    elif board[0] == 1 and board[4] == 1 and board[8] == 1:
+        return 2
+    elif board[0] == 2 and board[4] == 2 and board[8] == 2:
+        return 1
+    elif board[2] == 1 and board[4] == 1 and board[6] == 1:
+        return 2
+    elif board[2] == 2 and board[4] == 2 and board[6] == 2:
+        return 1
+
+    #CHECK IF BOARD IS FILLED, IN WHICH CASE IS A DRAW
+    #3 IS A DRAW
+    #0 IS GAME IS STILL ON
+    for cell in board:
+        if cell == 0:
+            return 0
+    return 3
+
+
+
 def handle_client(connectionSocket, addr):
     #GO THROUGH LOGIN PROTOCOL WITH CLIENT FIRST
     clientLogin(connectionSocket)
+
+    player = Player(None, connectionSocket)
+    playerListLock.acquire(blocking=True, timeout=-1)
+    playerList.append(player)
+    playerListLock.release()
+
+    game = Game(None, None)
 
     while True:
         select.select([connectionSocket], [], [])
@@ -52,20 +137,87 @@ def handle_client(connectionSocket, addr):
         except ConnectionResetError:
             print('Client just disconnected, closing that connection socket now')
             connectionSocket.close()
-            exit()
+            clientExit(player, game)
 
-        #CLIENT EXITING CASES
-        if buffer == "EXIT":
-            print("Exiting this thread")
-            exit()
-
-        elif buffer == "":
+        #INITIALLY CHECK FOR EMPTY PACKET
+        if buffer == "":
             print("Client just disconnected, closing that connection socket now.")
             connectionSocket.close()
-            exit()
+            clientExit(player, game)
 
-        elif re.match('LOGIN (a-zA-z)+', buffer):
-            print(buffer)
+        clientMessage = ParseClientMessage(buffer)
+
+        #CLIENT EXITING CASES
+        if clientMessage.command == "exit":
+            print("Exiting this thread")
+            clientExit(player, game)
+
+        elif clientMessage.command == "login" and clientMessage.arg != None:
+            player.name = clientMessage.arg
+            player.isAvailable = True
+            message = ServerMessage(player.name,serverPort,'200 (OK)',0,'Auto-matchmake? (Y/N)').toString()
+            connectionSocket.send(message.encode())
+
+        elif clientMessage.command == "matchmake":
+            if clientMessage.arg == None:
+                send(connectionSocket, player.name,serverPort,'400 (OK)',0,None)
+
+            elif clientMessage.arg == 'yes':
+                player.autoMatch = True
+                send(connectionSocket, player.name, serverPort, '200 (OK)', 0, None)
+
+                playerListLock.acquire(blocking=True, timeout=-1)
+                for opponent in playerList:
+                    if opponent == player:
+                        continue
+                    elif opponent.autoMatch and opponent.isAvailable:
+                        opponent.isAvailable = False
+                        player.isAvailable = False
+                        opponent.playerNum = 1
+                        player.playerNum = 2
+
+                        gameListLock.acquire(blocking=True, timeout=-1)
+                        game = Game(opponent, player)
+                        gameList.append(game)
+                        gameListLock.release()
+
+                        opponent.game = game
+                        player.game = game
+
+                        send(opponent.connectionSocket, opponent.name, serverPort, 1, 'You are player 1')
+                        send(player.connectionSocket, player.name, serverPort, 1, 'Your are player 2')
+                playerListLock.release()
+
+
+            elif clientMessage.arg == 'no':
+                player.autoMatch = False
+                send(connectionSocket, player.name, serverPort, '200 (OK)', 0, None)
+
+        elif clientMessage.command == "place":
+            num = int(clientMessage.arg)
+
+            #CHECK IF LEGAL MOVE
+            if player.game.board[num-1] == 0:
+                player.game.board[num-1] = game.turn
+
+                gameState = checkWinner(game.board)
+
+                #IF ANY OF THESE ARE TRUE THEN THE GAME IS OVER
+                if gameState == 1 or gameState == 2 or gameState == 3:
+                    player.game.player1.isAvailable = True
+                    player.game.player2.isAvailable = True
+
+
+
+
+                if player.game.turn == 1:
+                    player.game.turn = 2
+                else:
+                    player.game.turn = 1
+
+            #ILLEGAL MOVE
+            else:
+                send(connectionSocket, player.name, serverPort, '400 (OK)', player.game.turn, 'not a legal move')
 
 
 
@@ -83,8 +235,8 @@ if __name__ == "__main__":
 
         print("Time to accept a connection")
         connectionSocket, addr = serverSocket.accept()
-        clientSockets.append(connectionSocket)
-        clientAddresses.append(addr)
+        # clientSockets.append(connectionSocket)
+        # clientAddresses.append(addr)
 
         _thread.start_new(handle_client, (connectionSocket, addr))
 
