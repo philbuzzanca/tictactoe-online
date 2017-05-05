@@ -13,8 +13,12 @@ def prompt():
     stdout.flush()
 
 def readingFromStdin(buff):
+    buff = ""
+    print("Entering rdin")
+
     buff = stdin.readline()
     buff = buff.rstrip()
+    print(buff)
     length = 0
     try:
         buff = buff.split(' ')
