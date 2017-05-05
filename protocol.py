@@ -29,7 +29,7 @@
 # Server->a,b: OK, game over (gamestate 3). Message = "Player x wins/draw/player left game"
 
 class ClientMessage:
-	def __init__(self, userid, destinationPort, command=None, arg=None):
+	def __init__(self, userid, destinationPort, command, arg=None):
 		self.userid = userid
 		self.destinationPort = destinationPort
 		self.command = command
@@ -56,21 +56,21 @@ class ServerMessage:
 		if self.status is not None:
 			ret = ret + ":" + str(self.status)
 		if self.gameState is not None:
-			ret = ret + ":" + str(self.arg)
+			ret = ret + ":" + str(self.gameState)
+		if self.message is not None:
+			ret = ret + ":" + str(self.message)
 		return ret
 
 def ParseClientMessage(message):
 	split = message.split(":", message.count(':'))
-	ret = ClientMessage(split[0], split[1])
-	if split[2] is not None:
-		ret.command = split[2]
-	if split[3] is not None:
+	ret = ClientMessage(split[0], split[1], split[2])
+	if len(split) == 4:
 		ret.arg = split[3]
 	return ret
 
 def ParseServerMessage(message):
 	split = message.split(":", message.count(':'))
 	ret = ServerMessage(split[0], split[1], int(split[2]), int(split[3]))
-	if split[4] is not None:
+	if len(split) == 5:
 		ret.message = split[4]
 	return ret
