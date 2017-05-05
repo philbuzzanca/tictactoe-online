@@ -20,10 +20,10 @@ class Game(object):
     board = None
     turn = 1
 
-    def __init__(self, player1, player2):
+    def __init__(self, player1=None, player2=None):
         self.player1 = player1
         self.player2 = player2
-        self.board = array.array(0, (0 for i in range(0, 10)))
+        self.board = array.array('i', (0 for i in range(0, 10)))
 
 class Player(object):
     name = None
@@ -34,7 +34,7 @@ class Player(object):
     game = None
 
 
-    def __init__(self, name, connectionSocket):
+    def __init__(self, name=None, connectionSocket=None):
         self.name = name
         self.connectionSocket = connectionSocket
 
@@ -60,17 +60,6 @@ def parse_args():
         exit()
 
     return args.machine_name, args.port_number
-
-def clientLogin(connectionSocket):
-    select.select([connectionSocket], [], [])
-    buffer = connectionSocket.recv(1024).decode()
-
-    if buffer == 'WOLFIE':
-        connectionSocket.send('EIFLOW'.encode())
-    else:
-        print('This client failed to follow proper login protocol, closing socket and thread.')
-        connectionSocket.close()
-        exit()
 
 def send(clientSocket, playerName, destinationPort, status, gameState, message):
     message = ServerMessage(playerName, destinationPort, status, gameState, message)
@@ -119,9 +108,6 @@ def checkWinner(board):
 
 
 def handle_client(connectionSocket, addr):
-    #GO THROUGH LOGIN PROTOCOL WITH CLIENT FIRST
-    clientLogin(connectionSocket)
-
     player = Player(None, connectionSocket)
     playerListLock.acquire(blocking=True, timeout=-1)
     playerList.append(player)
@@ -152,19 +138,20 @@ def handle_client(connectionSocket, addr):
             print("Exiting this thread")
             clientExit(player, game)
 
-        elif clientMessage.command == "login" and clientMessage.arg != None:
-            player.name = clientMessage.arg
+        elif clientMessage.command == "login" and clientMessage.userid != None:
+            print("New User: ", clientMessage.arg)
+            player.name = clientMessage.userid
             player.isAvailable = True
-            message = ServerMessage(player.name,serverPort,'200 (OK)',0,'Auto-matchmake? (Y/N)').toString()
+            message = ServerMessage(player.name,serverPort,'200',0,'Auto-matchmake? (Y/N)').toString()
             connectionSocket.send(message.encode())
 
         elif clientMessage.command == "matchmake":
             if clientMessage.arg == None:
-                send(connectionSocket, player.name,serverPort,'400 (OK)',0,None)
+                send(connectionSocket, player.name,serverPort,'400',0,None)
 
             elif clientMessage.arg == 'yes':
                 player.autoMatch = True
-                send(connectionSocket, player.name, serverPort, '200 (OK)', 0, None)
+                send(connectionSocket, player.name, serverPort, '200', 0, None)
 
                 playerListLock.acquire(blocking=True, timeout=-1)
                 for opponent in playerList:
@@ -176,10 +163,7 @@ def handle_client(connectionSocket, addr):
                         opponent.playerNum = 1
                         player.playerNum = 2
 
-                        gameListLock.acquire(blocking=True, timeout=-1)
                         game = Game(opponent, player)
-                        gameList.append(game)
-                        gameListLock.release()
 
                         opponent.game = game
                         player.game = game
@@ -191,7 +175,7 @@ def handle_client(connectionSocket, addr):
 
             elif clientMessage.arg == 'no':
                 player.autoMatch = False
-                send(connectionSocket, player.name, serverPort, '200 (OK)', 0, None)
+                send(connectionSocket, player.name, serverPort, '200', 0, None)
 
         elif clientMessage.command == "place":
             num = int(clientMessage.arg)
@@ -217,7 +201,7 @@ def handle_client(connectionSocket, addr):
 
             #ILLEGAL MOVE
             else:
-                send(connectionSocket, player.name, serverPort, '400 (OK)', player.game.turn, 'not a legal move')
+                send(connectionSocket, player.name, serverPort, '400', player.game.turn, 'not a legal move')
 
 
 

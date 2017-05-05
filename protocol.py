@@ -56,7 +56,9 @@ class ServerMessage:
 		if self.status is not None:
 			ret = ret + ":" + str(self.status)
 		if self.gameState is not None:
-			ret = ret + ":" + str(self.arg)
+			ret = ret + ":" + str(self.gameState)
+		if self.message is not None:
+			ret = ret + ":" + str(self.message)
 		return ret
 
 def ParseClientMessage(message):

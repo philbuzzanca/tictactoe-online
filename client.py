@@ -3,7 +3,7 @@ import argparse
 from sys import exit, stdin, stdout
 import select
 import _thread
-from protocol import ClientMessage
+from protocol import ClientMessage, ParseServerMessage
 
 userId = None
 serverPort = None
@@ -13,26 +13,27 @@ def prompt():
     stdout.flush()
 
 def readingFromStdin(buff):
-    while True:
+    buff = stdin.readline()
+    buff = buff.rstrip()
+    length = 0
+    try:
+        buff = buff.split(' ')
+        length = len(buff)
+    except:
+        buff = (str(buff), 0)
+        length = 1
+    while (length > 2) :
+        stdout.write('Input cannot exceed two arguments. Please try again')
         buff = stdin.readline()
         buff = buff.rstrip()
-        length = 0
         try:
             buff = buff.split(' ')
             length = len(buff)
         except:
             buff = (str(buff), 0)
             length = 1
-        while (length > 2) :
-            stdout.write('Input cannot exceed two arguments. Please try again')
-            buff = stdin.readline()
-            buff = buff.rstrip()
-            try:
-                buff = buff.split(' ')
-                length = len(buff)
-            except:
-                buff = (str(buff), 0)
-                length = 1
+
+    return buff
 
 def sendDataToServer(socket, buff, log=True):
     global userId
@@ -43,17 +44,18 @@ def sendDataToServer(socket, buff, log=True):
         if (log != True):
             if(len(buff) > 1):
                 userId = buff[1]
-                message = ClientMessage(userId, serverPort, buff[0])
+                message = ClientMessage(userId, serverPort, buff[0]).toString()
                 sendToServer(socket, message)
                 select.select([socket], [], [], None)
-                serverPacket = socket.recv(1024).decode()
+                serverPacket = ParseServerMessage(socket.recv(1024).decode())
                 if(serverPacket.status == 400):
                     stdout.write('login failed')
                 else:
                     stdout.write(serverPacket.message+"> ")
+                    stdout.flush()
                     input = stdin.readline()
                     input = input.rstrip()
-                    message = ClientMessage(userId, serverPort, input)
+                    message = ClientMessage(userId, serverPort, input).toString()
                     sendToServer(socket, message)
             else:
                 print("MISSING ARGUMENT")
@@ -63,14 +65,14 @@ def sendDataToServer(socket, buff, log=True):
     elif (buff[0] == 'help'):
         dohelp()
     elif (buff[0] == 'exit'):
-        message = ClientMessage(userId, serverPort, buff[0])
+        message = ClientMessage(userId, serverPort, buff[0]).toString()
         sendToServer(socket, message)
         print('exiting ...')
         socket.close()
         exit()
     elif (buff[0] == 'place'):
         if (len(buff) > 1):
-            message = ClientMessage(userId, serverPort, buff[0], buff[1])
+            message = ClientMessage(userId, serverPort, buff[0], buff[1]).toString()
             sendToServer(message)
         else:
             print("MISSING ARGUMENT")
@@ -115,16 +117,6 @@ def parse_args():
 
     return args.m, args.p
 
-def login_procedure(clientSocket):
-    clientSocket.send('WOLFIE'.encode())
-
-    select.select([clientSocket], [], [], None)
-    serverPacket = clientSocket.recv(1024).decode()
-
-    if serverPacket != 'EIFLOW':
-        print('Error in login procedure with server, shutting down client program now.')
-        exit()
-
 #IGNORE FLUFF, JUST THERE TO GET _thread.start_new TO WORK
 def serverHandler(clientSocket, fluff):
     while True:
@@ -132,6 +124,8 @@ def serverHandler(clientSocket, fluff):
         select.select([clientSocket], [], [], None)
 
         serverPacket = clientSocket.recv(1024).decode()
+
+        serverMessage = ParseServerMessage(serverPacket)
 
         print(serverPacket)
 #---------------------------------------------
@@ -156,7 +150,7 @@ def main():
 
     #LOGIN PROCEDURE WITH SERVER FIRST BEFORE PROCEEDING
     prompt()
-    readingFromStdin(userInput)
+    userInput = readingFromStdin(userInput)
     sendDataToServer(clientSocket, userInput, False)   #False means user is not logged in yet.
     #login_procedure(clientSocket)
 
@@ -178,7 +172,7 @@ def main():
             clientSocket.close()
             exit()
 
-        elif line == 'help':
+        elif userInput[0] == 'help':
             dohelp()
 if __name__ == "__main__":
     main()
