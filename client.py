@@ -59,7 +59,7 @@ def sendDataToServer(socket, buff, log=True):
                     stdout.flush()
                     input = stdin.readline()
                     input = input.rstrip()
-                    message = ClientMessage(userId, serverPort, input).toString()
+                    message = ClientMessage(userId, serverPort, 'matchmake', input).toString()
                     sendToServer(socket, message)
             else:
                 print("MISSING ARGUMENT")
@@ -164,7 +164,7 @@ def main():
     #THIS THREAD WILL JUST LISTEN ON STDIN
     while True:
         prompt()
-        readingFromStdin(userInput)
+        userInput = readingFromStdin(userInput)
         sendDataToServer(clientSocket, userInput)
 
         #REMOVE THE NEWLINE CHARACTER

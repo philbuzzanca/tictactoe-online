@@ -62,7 +62,7 @@ def parse_args():
     return args.machine_name, args.port_number
 
 def send(clientSocket, playerName, destinationPort, status, gameState, message):
-    message = ServerMessage(playerName, destinationPort, status, gameState, message)
+    message = ServerMessage(playerName, destinationPort, status, gameState, message).toString()
     clientSocket.send(message.encode())
 
 def clientExit(player, game):
@@ -139,7 +139,7 @@ def handle_client(connectionSocket, addr):
             clientExit(player, game)
 
         elif clientMessage.command == "login" and clientMessage.userid != None:
-            print("New User: ", clientMessage.arg)
+            print("New User: ", clientMessage.userid)
             player.name = clientMessage.userid
             player.isAvailable = True
             message = ServerMessage(player.name,serverPort,'200',0,'Auto-matchmake? (Y/N)').toString()
@@ -165,7 +165,7 @@ def handle_client(connectionSocket, addr):
             if clientMessage.arg == None:
                 send(connectionSocket, player.name,serverPort,'400',0,None)
 
-            elif clientMessage.arg == 'yes':
+            elif clientMessage.arg == 'y':
                 player.autoMatch = True
                 send(connectionSocket, player.name, serverPort, '200', 0, None)
 
@@ -189,7 +189,7 @@ def handle_client(connectionSocket, addr):
                 playerListLock.release()
 
 
-            elif clientMessage.arg == 'no':
+            elif clientMessage.arg == 'n':
                 player.autoMatch = False
                 send(connectionSocket, player.name, serverPort, '200', 0, None)
 
