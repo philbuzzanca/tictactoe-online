@@ -145,6 +145,22 @@ def handle_client(connectionSocket, addr):
             message = ServerMessage(player.name,serverPort,'200',0,'Auto-matchmake? (Y/N)').toString()
             connectionSocket.send(message.encode())
 
+        elif clientMessage.command == "who":
+            availablePlayers = list()
+            playerListLock.acquire(blocking=True, timeout=-1)
+            for p in playerList:
+                if p.isAvailable:
+                    availablePlayers.append(p)
+            playerListLock.release()
+
+            if len(availablePlayers) == 0:
+                send(connectionSocket, player.name, serverPort, '200', 0, 'No online players')
+            else:
+                players = ""
+                for p in availablePlayers:
+                    players += str(p.name) + ","
+                send(connectionSocket, player.name, serverPort, '200', 0, players)
+
         elif clientMessage.command == "matchmake":
             if clientMessage.arg == None:
                 send(connectionSocket, player.name,serverPort,'400',0,None)
