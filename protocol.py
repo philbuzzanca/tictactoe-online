@@ -36,12 +36,20 @@ class ClientMessage:
 		self.arg = arg
 
 	def toString(self):
-		ret = self.userid+":"+str(self.destinationPort)
-		if self.command is not None:
-			ret = ret + ":" + self.command
-		if self.arg is not None:
-			ret = ret + ":" + self.arg
-		return ret
+		if self.userid is not None:
+			ret = self.userid+":"+str(self.destinationPort)
+			if self.command is not None:
+				ret = ret + ":" + self.command
+			if self.arg is not None:
+				ret = ret + ":" + self.arg
+			return ret
+		else:
+			ret = "none:" + str(self.destinationPort)
+			if self.command is not None:
+				ret = ret + ":" + self.command
+			if self.arg is not None:
+				ret = ret + ":" + self.arg
+			return ret
 
 class ServerMessage:
 	def __init__(self, userid, destinationPort, status, gameState, message=None):
