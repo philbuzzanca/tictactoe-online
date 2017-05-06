@@ -163,11 +163,11 @@ def handle_client(connectionSocket, addr):
 
         elif clientMessage.command == "matchmake":
             if clientMessage.arg == None:
-                send(connectionSocket, player.name,serverPort,'400',0,None)
+                send(connectionSocket, player.name, serverPort,'400', 0, 'matchmake')
 
             elif clientMessage.arg == 'y':
                 player.autoMatch = True
-                send(connectionSocket, player.name, serverPort, '200', 0, None)
+                send(connectionSocket, player.name, serverPort, '200', 0, 'matchmake')
 
                 playerListLock.acquire(blocking=True, timeout=-1)
                 for opponent in playerList:

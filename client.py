@@ -160,9 +160,14 @@ def serverHandler(clientSocket, fluff):
         #SELECT AND WAIT ON CLIENT SOCKET
         select.select([clientSocket], [], [], None)
         serverPacket = ParseServerMessage(clientSocket.recv(1024).decode())
-        if (serverPacket.status == 200):
 
-        print(serverPacket)
+        #MEANING SERVER SENT AN OK MESSAGE
+        if (serverPacket.status == 200):
+            print(serverPacket.message)
+
+        #ELSE WAS 400 NOT OK MESSAGE
+        else:
+            print(serverPacket.message)
 #---------------------------------------------
 # main ()
 #
@@ -175,7 +180,7 @@ def main():
     ticTactToeBoard = [0 for i in range(0,9)]
     displayBoard(ticTactToeBoard)
     serverName, serverPort = parse_args()
-    exit()
+    # exit()
 
     #TRY CATCH BLOCK IN CASE ERROR IN ESTABLISHING SOCKET
     try:
