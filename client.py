@@ -1,3 +1,5 @@
+#Thierno Bah
+
 from socket import *
 import argparse
 from sys import exit, stdin, stdout
@@ -6,14 +8,33 @@ import _thread
 from protocol import ClientMessage, ParseServerMessage
 
 userId = None
+turnNumber = None
 serverPort = None
+ticTactToeBoard = None
 
 def prompt():
     stdout.write('$: ')
     stdout.flush()
 
+def displayMessage(message):
+    stdout.write(message)
+    stdout.flush()
+
+def displayBoard(board):
+    for i in range(len(board)):
+        if i > 0 and i % 3 == 0:
+            print()
+        print(board[i], end=' ')
+def isValidMove(move):
+    intMov = None
+    try:
+        intMov = int(move)
+        if(intMov < 1 or intMov > 9):
+            return False
+    except ValueError:
+        return False
+    return True
 def readingFromStdin(buff):
-    buff = ""
     print("Entering rdin")
 
     buff = stdin.readline()
@@ -27,7 +48,7 @@ def readingFromStdin(buff):
         buff = (str(buff), 0)
         length = 1
     while (length > 2) :
-        stdout.write('Input cannot exceed two arguments. Please try again')
+        displayMessage('Input cannot exceed two arguments. Please try again')
         buff = stdin.readline()
         buff = buff.rstrip()
         try:
@@ -53,37 +74,49 @@ def sendDataToServer(socket, buff, log=True):
                 select.select([socket], [], [], None)
                 serverPacket = ParseServerMessage(socket.recv(1024).decode())
                 if(serverPacket.status == 400):
-                    stdout.write('login failed')
+                    displayMessage('login failed')
                 else:
-                    stdout.write(serverPacket.message+"> ")
-                    stdout.flush()
+                    displayMessage(serverPacket.message+"> ")
                     input = stdin.readline()
                     input = input.rstrip()
                     message = ClientMessage(userId, serverPort, 'matchmake', input).toString()
                     sendToServer(socket, message)
             else:
-                print("MISSING ARGUMENT")
+                displayMessage("MISSING ARGUMENT")
                 dohelp()
         else:
-            print("You are already logged in. Enter a different command")
+            displayMessage("You are already logged in. Enter a different command")
     elif (buff[0] == 'help'):
         dohelp()
     elif (buff[0] == 'exit'):
         message = ClientMessage(userId, serverPort, buff[0]).toString()
         sendToServer(socket, message)
-        print('exiting ...')
+        displayMessage('exiting ...')
         socket.close()
         exit()
     elif (buff[0] == 'place'):
         if (len(buff) > 1):
-            message = ClientMessage(userId, serverPort, buff[0], buff[1]).toString()
-            sendToServer(message)
+            if (isValidMove(buff[1])):
+                message = ClientMessage(userId, serverPort, buff[0].toString(), buff[1]).toString()
+                sendToServer(message)
+            else:
+                print("INVALID MOVE")
         else:
             print("MISSING ARGUMENT")
             dohelp()
+    elif (buff[0] == 'who'):
+        dohelp()
+
+    elif (buff[0] == 'play'):
+        dohelp()
+
+    elif (buff[0] == 'games'):
+        message = ClientMessage(userId, serverPort, buff[0].toString())
+        #games
     else:
         print("INVALID COMMAND")
         dohelp()
+
 def dohelp():
     print ("\nWelcome to tictactoe commands")
     print("\nhelp:\tfor help\n")
@@ -126,10 +159,8 @@ def serverHandler(clientSocket, fluff):
     while True:
         #SELECT AND WAIT ON CLIENT SOCKET
         select.select([clientSocket], [], [], None)
-
-        serverPacket = clientSocket.recv(1024).decode()
-
-        serverMessage = ParseServerMessage(serverPacket)
+        serverPacket = ParseServerMessage(clientSocket.recv(1024).decode())
+        if (serverPacket.status == 200):
 
         print(serverPacket)
 #---------------------------------------------
@@ -141,7 +172,10 @@ def main():
     #GRAB COMMAND LINE ARGUMENTS
     userInput = ''   # to grab user's input
     #userId = ''
+    ticTactToeBoard = [0 for i in range(0,9)]
+    displayBoard(ticTactToeBoard)
     serverName, serverPort = parse_args()
+    exit()
 
     #TRY CATCH BLOCK IN CASE ERROR IN ESTABLISHING SOCKET
     try:
