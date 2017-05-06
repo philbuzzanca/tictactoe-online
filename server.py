@@ -23,7 +23,7 @@ class Game(object):
     def __init__(self, player1=None, player2=None):
         self.player1 = player1
         self.player2 = player2
-        self.board = array.array('i', (0 for i in range(0, 10)))
+        self.board = [0 for i in range(0,9)]
 
 class Player(object):
     name = None
@@ -163,11 +163,11 @@ def handle_client(connectionSocket, addr):
 
         elif clientMessage.command == "matchmake":
             if clientMessage.arg == None:
-                send(connectionSocket, player.name,serverPort,'400',0,None)
+                send(connectionSocket, player.name, serverPort,'400', 0, 'matchmake')
 
             elif clientMessage.arg == 'y':
                 player.autoMatch = True
-                send(connectionSocket, player.name, serverPort, '200', 0, None)
+                send(connectionSocket, player.name, serverPort, '200', 0, 'matchmake')
 
                 playerListLock.acquire(blocking=True, timeout=-1)
                 for opponent in playerList:
@@ -184,8 +184,8 @@ def handle_client(connectionSocket, addr):
                         opponent.game = game
                         player.game = game
 
-                        send(opponent.connectionSocket, opponent.name, serverPort, 1, 'You are player 1')
-                        send(player.connectionSocket, player.name, serverPort, 1, 'Your are player 2')
+                        send(opponent.connectionSocket, opponent.name, serverPort, 200, 1, 'You are player 1')
+                        send(player.connectionSocket, player.name, serverPort, 200, 1, 'Your are player 2')
                 playerListLock.release()
 
 
@@ -200,20 +200,48 @@ def handle_client(connectionSocket, addr):
             if player.game.board[num-1] == 0:
                 player.game.board[num-1] = game.turn
 
-                gameState = checkWinner(game.board)
+                winState = checkWinner(game.board)
 
                 #IF ANY OF THESE ARE TRUE THEN THE GAME IS OVER
-                if gameState == 1 or gameState == 2 or gameState == 3:
+                if winState == 1 or winState == 2 or winState == 3:
                     player.game.player1.isAvailable = True
                     player.game.player2.isAvailable = True
+                    #DRAW
+                    if winState == 3:
+                        send(player.game.player1.connectionSocket, player.game.player1.name, serverPort, 200,
+                             player.game.turn,
+                             'draw')
+                        send(player.game.player2.connectionSocket, player.game.player2.name, serverPort, 200,
+                             player.game.turn,
+                             'draw')
+                    # PLAYER 2 WON
+                    elif winState == 2:
+                        send(player.game.player1.connectionSocket, player.game.player1.name, serverPort, 200,
+                             player.game.turn,
+                             'player 2 won')
+                        send(player.game.player2.connectionSocket, player.game.player2.name, serverPort, 200,
+                             player.game.turn,
+                             'player 2 won')
+                    else:
+                        send(player.game.player1.connectionSocket, player.game.player1.name, serverPort, 200,
+                             player.game.turn,
+                             'player 1 won')
+                        send(player.game.player2.connectionSocket, player.game.player2.name, serverPort, 200,
+                             player.game.turn,
+                             'player 1 won')
 
 
-
-
+                # OTHERWISE THE GAME IS STILL GOING
+                lastPlayerTurn = player.game.turn
                 if player.game.turn == 1:
                     player.game.turn = 2
                 else:
                     player.game.turn = 1
+
+                send(player.game.player1.connectionSocket, player.game.player1.name, serverPort, 200, lastPlayerTurn,
+                     str(num))
+                send(player.game.player2.connectionSocket, player.game.player2.name, serverPort, 200, lastPlayerTurn,
+                 str(num))
 
             #ILLEGAL MOVE
             else:
