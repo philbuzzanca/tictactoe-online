@@ -8,6 +8,7 @@ import _thread
 from protocol import ClientMessage, ParseServerMessage
 
 userId = None
+userNumber = None
 turnNumber = None
 serverPort = None
 ticTactToeBoard = None
@@ -156,6 +157,7 @@ def parse_args():
 
 #IGNORE FLUFF, JUST THERE TO GET _thread.start_new TO WORK
 def serverHandler(clientSocket, fluff):
+    global userNumber
     while True:
         #SELECT AND WAIT ON CLIENT SOCKET
         select.select([clientSocket], [], [], None)
@@ -164,6 +166,23 @@ def serverHandler(clientSocket, fluff):
         #MEANING SERVER SENT AN OK MESSAGE
         if (serverPacket.status == 200):
             print(serverPacket.message)
+
+            if serverPacket.gameState == 1 or serverPacket.gameState == 2:
+                if serverPacket.message == 'You are player 1':
+                    userNumber = 1
+                elif serverPacket.message == 'You are player 2':
+                    userNumber = 2
+                else:
+                    place = int(serverPacket.message)
+                    ticTactToeBoard[place] = serverPacket.gameState
+                    displayBoard(ticTactToeBoard)
+
+            elif serverPacket.gameState == 3:
+                print(serverPacket.message)
+                #RESET BOARD ON END OF GAME
+                ticTactToeBoard = [0 for i in range(0,9)]
+
+
 
         #ELSE WAS 400 NOT OK MESSAGE
         else:
@@ -174,11 +193,12 @@ def serverHandler(clientSocket, fluff):
 #---------------------------------------------
 
 def main():
+    global ticTactToeBoard
     #GRAB COMMAND LINE ARGUMENTS
     userInput = ''   # to grab user's input
     #userId = ''
     ticTactToeBoard = [0 for i in range(0,9)]
-    displayBoard(ticTactToeBoard)
+    # displayBoard(ticTactToeBoard)
     serverName, serverPort = parse_args()
     # exit()
 
