@@ -185,7 +185,7 @@ def handle_client(connectionSocket, addr):
                         player.game = game
 
                         send(opponent.connectionSocket, opponent.name, serverPort, 200, 1, 'You are player 1')
-                        send(player.connectionSocket, player.name, serverPort, 200, 1, 'Your are player 2')
+                        send(player.connectionSocket, player.name, serverPort, 200, 1, 'You are player 2')
                 playerListLock.release()
 
 
@@ -197,7 +197,8 @@ def handle_client(connectionSocket, addr):
             num = int(clientMessage.arg)
 
             #CHECK IF LEGAL MOVE
-            if player.game.board[num-1] == 0:
+            #CHECK IF IT IS THIS PLAYER'S TURN
+            if player.game.board[num-1] == 0 and player.playerNum == player.game.turn:
                 player.game.board[num-1] = game.turn
 
                 winState = checkWinner(game.board)
@@ -209,25 +210,25 @@ def handle_client(connectionSocket, addr):
                     #DRAW
                     if winState == 3:
                         send(player.game.player1.connectionSocket, player.game.player1.name, serverPort, 200,
-                             player.game.turn,
+                             3,
                              'draw')
                         send(player.game.player2.connectionSocket, player.game.player2.name, serverPort, 200,
-                             player.game.turn,
+                             3,
                              'draw')
                     # PLAYER 2 WON
                     elif winState == 2:
                         send(player.game.player1.connectionSocket, player.game.player1.name, serverPort, 200,
-                             player.game.turn,
+                             3,
                              'player 2 won')
                         send(player.game.player2.connectionSocket, player.game.player2.name, serverPort, 200,
-                             player.game.turn,
+                             3,
                              'player 2 won')
                     else:
                         send(player.game.player1.connectionSocket, player.game.player1.name, serverPort, 200,
-                             player.game.turn,
+                             3,
                              'player 1 won')
                         send(player.game.player2.connectionSocket, player.game.player2.name, serverPort, 200,
-                             player.game.turn,
+                             3,
                              'player 1 won')
 
 
