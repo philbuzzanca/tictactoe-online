@@ -118,7 +118,6 @@ def sendDataToServer(socket, buff):
         if(len(buff) > 1):
             message = ClientMessage(userId, serverPort, buff[0], buff[1]).toString()
             sendToServer(socket, message)
-
     elif (buff[0] == 'games'):
         message = ClientMessage(userId, serverPort, buff[0]).toString()
         sendToServer(socket, message)
@@ -175,7 +174,6 @@ def serverHandler(clientSocket, fluff):
         #MEANING SERVER SENT AN OK MESSAGE
         if (serverPacket.status == 200):
             # print(serverPacket.message)
-
             if serverPacket.gameState == 1 or serverPacket.gameState == 2:
                 if serverPacket.message == 'You are player 1':
                     print(serverPacket.message)
@@ -199,7 +197,9 @@ def serverHandler(clientSocket, fluff):
                 print(serverPacket.message)
                 displayMessage("I suppose you are the winner.")
                 ticTactToeBoard = [0 for i in range(0, 9)]
-            
+            else:
+                displayMessage(serverPacket.message)
+
 #---------------------------------------------
 # main ()
 #
