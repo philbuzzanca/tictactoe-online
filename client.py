@@ -7,22 +7,25 @@ import select
 import _thread
 from protocol import ClientMessage, ParseServerMessage
 
-isLoggedIn = False
-userId = None
-userNumber = None
-turnNumber = None
+isLoggedIn = False  # TO MAKE SURE USER IS ABLE TO LOG ONLY ONCE
+userId = None       # TO HOLD USERNAME
+userNumber = None   # THE NUMBER THAT TELLS THE TURN
 serverPort = None
-ticTactToeBoard = None
+ticTactToeBoard = None # TO HOLD THE BOARD
 
+
+#TO PROMPT USER FOR INPUT
 def prompt():
     stdout.write('\n$: ')
     stdout.flush()
 
+# TO DISPLAY MESSAGES
 def displayMessage(message):
     stdout.write(message)
     print()
     stdout.flush()
 
+# TO DISPLAY THE GAME BOARD
 def displayBoard(board):
     print("Board:")
     for i in range(len(board)):
@@ -30,6 +33,8 @@ def displayBoard(board):
             print()
         print(board[i], end=' ')
     print()
+
+# VALIDATE USER'S MOVES
 def isValidMove(move):
     intMov = None
     try:
@@ -39,16 +44,17 @@ def isValidMove(move):
     except ValueError:
         return False
     return True
+
+# TO READ FROM STANDARD IN
 def readingFromStdin(buff):
     buff = stdin.readline()
     buff = buff.rstrip()
-    print(buff)
     length = 0
-    try:
+    try:  #  TRY TO SPLIT USER'S INPUT
         buff = buff.split(' ')
         length = len(buff)
     except:
-        buff = (str(buff), 0)
+        buff = (str(buff), 0) # IN CASE USER ENTERS ONE STRING THEN ADD ZERO SO WE CAN HAVE A LIST
         length = 1
     while (length > 2) :
         displayMessage('Input cannot exceed two arguments. Please try again')
@@ -62,12 +68,12 @@ def readingFromStdin(buff):
             length = 1
     return buff
 
+# THIS CHECK THE APPROPRIATE COMMAND SEND ARGS TO SERVER
 def sendDataToServer(socket, buff):
     global userId
     global serverPort
     global isLoggedIn
     #message = None
-    print(buff)
     if(buff[0] == 'login'):
         if (isLoggedIn != True):
             if(len(buff) > 1):
@@ -125,6 +131,7 @@ def sendDataToServer(socket, buff):
         print("INVALID COMMAND")
         dohelp()
 
+# TO DISPLAY THE HELP MESSAGES
 def dohelp():
     print ("\nWelcome to tictactoe commands")
     print("\nhelp:\tfor help\n")
@@ -143,9 +150,12 @@ to the server indicating that you'd like to play with X. After receiving this me
 the server starts a new game between you and X. If X is not available, the server replies you that X is no longer
 available. You may then choose another player instead.
 ''')
+
+# TO SEND THE MESSAGE TO SERVER
 def sendToServer(clientSocket, sentence):
     clientSocket.send(sentence.encode())
 
+# PARSE COMMAND LINE ARGUMENTS
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Grab command line arguments for machine name/ip address and port_number")
@@ -170,7 +180,6 @@ def serverHandler(clientSocket, fluff):
         #SELECT AND WAIT ON CLIENT SOCKET
         select.select([clientSocket], [], [], None)
         serverPacket = ParseServerMessage(clientSocket.recv(1024).decode())
-
         #MEANING SERVER SENT AN OK MESSAGE
         if (serverPacket.status == 200):
             # print(serverPacket.message)
@@ -207,14 +216,14 @@ def serverHandler(clientSocket, fluff):
 
 def main():
     global ticTactToeBoard
-    #GRAB COMMAND LINE ARGUMENTS
+
     userInput = ''   # to grab user's input
     #userId = ''
     global isLoggedIn
     ticTactToeBoard = [0 for i in range(0,9)]
     displayBoard(ticTactToeBoard)
+    # GRAB COMMAND LINE ARGUMENTS
     serverName, serverPort = parse_args()
-
 
     #TRY CATCH BLOCK IN CASE ERROR IN ESTABLISHING SOCKET
     try:
@@ -228,7 +237,7 @@ def main():
     #LOGIN PROCEDURE WITH SERVER FIRST BEFORE PROCEEDING
     prompt()
     userInput = readingFromStdin(userInput)
-    sendDataToServer(clientSocket, userInput)   #False means user is not logged in yet.
+    sendDataToServer(clientSocket, userInput)   #LOGIN OR ANY OTHER COMMAND
     #login_procedure(clientSocket)
 
     #INITIALIZE A THREAD TO LISTEN ON INPUT FROM SERVER
@@ -237,20 +246,9 @@ def main():
     #THIS THREAD WILL JUST LISTEN ON STDIN
     while True:
         prompt()
-        userInput = readingFromStdin(userInput)
-        sendDataToServer(clientSocket, userInput)
+        userInput = readingFromStdin(userInput) # takes commands
+        sendDataToServer(clientSocket, userInput) # parse and send to server
 
-        #REMOVE THE NEWLINE CHARACTER
-        #line = line[0:-1]
-
-        if userInput[0] == 'exit':
-            message = ClientMessage(userId, serverPort, userInput[0])
-            sendToServer(message)
-            clientSocket.close()
-            exit()
-
-        elif userInput[0] == 'help':
-            dohelp()
 if __name__ == "__main__":
     main()
 
