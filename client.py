@@ -22,6 +22,7 @@ def displayMessage(message):
     stdout.flush()
 
 def displayBoard(board):
+    print("Board:")
     for i in range(len(board)):
         if i > 0 and i % 3 == 0:
             print()
@@ -98,8 +99,8 @@ def sendDataToServer(socket, buff, log=True):
     elif (buff[0] == 'place'):
         if (len(buff) > 1):
             if (isValidMove(buff[1])):
-                message = ClientMessage(userId, serverPort, buff[0].toString(), buff[1]).toString()
-                sendToServer(message)
+                message = ClientMessage(userId, serverPort, buff[0], buff[1]).toString()
+                sendToServer(socket, message)
             else:
                 print("INVALID MOVE")
         else:
@@ -157,7 +158,7 @@ def parse_args():
 
 #IGNORE FLUFF, JUST THERE TO GET _thread.start_new TO WORK
 def serverHandler(clientSocket, fluff):
-    global userNumber
+    global userNumber, ticTactToeBoard
     while True:
         #SELECT AND WAIT ON CLIENT SOCKET
         select.select([clientSocket], [], [], None)
@@ -174,7 +175,7 @@ def serverHandler(clientSocket, fluff):
                     userNumber = 2
                 else:
                     place = int(serverPacket.message)
-                    ticTactToeBoard[place] = serverPacket.gameState
+                    ticTactToeBoard[place-1] = serverPacket.gameState
                     displayBoard(ticTactToeBoard)
 
             elif serverPacket.gameState == 3:
@@ -198,9 +199,9 @@ def main():
     userInput = ''   # to grab user's input
     #userId = ''
     ticTactToeBoard = [0 for i in range(0,9)]
-    # displayBoard(ticTactToeBoard)
+    displayBoard(ticTactToeBoard)
     serverName, serverPort = parse_args()
-    # exit()
+    exit()
 
     #TRY CATCH BLOCK IN CASE ERROR IN ESTABLISHING SOCKET
     try:
