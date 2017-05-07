@@ -178,12 +178,17 @@ def handle_client(connectionSocket, addr):
             connectionSocket.send(message.encode())
 
         #HANDLE PLAY PLAYER FROM CLIENT
-        elif clientMessage.command == 'play' and clientMessage.arg is not None:
+        elif clientMessage.command == "play" and clientMessage.arg is not None:
             playerListLock.acquire(blocking=True, timeout=-1)
+            flag = True
             for p in playerList:
-                if p.name == clientMessage.arg and p.isAvailable:
+                if p.name == clientMessage.arg and p.isAvailable and p.name is not player.name:
+                    flag = False
                     p.isAvailable = False
                     player.isAvailable = False
+
+                    p.playerNum = 1
+                    player.playerNum = 2
 
                     game = Game(p, player)
                     gameListLock.acquire(blocking=True, timeout=-1)
@@ -197,6 +202,9 @@ def handle_client(connectionSocket, addr):
                     send(player.connectionSocket, player.name, serverPort, 200, 1, 'You are player 2')
                     break
             playerListLock.release()
+
+            if flag:
+                send(player.connectionSocket, player.name, serverPort, 400, 0, 'Player either does not exist or is not available. Or you weirdly wanted to play yourself...')
 
         #RESPOND TO QUERY REQUEST OF WHO'S ON AND WHO IS AVAILABLE
         elif clientMessage.command == "who":
@@ -280,7 +288,7 @@ def handle_client(connectionSocket, addr):
             if player.game.board[num-1] == 0 and player.playerNum == player.game.turn:
                 player.game.board[num-1] = game.turn
 
-                winState = checkWinner(game.board)
+                winState = checkWinner(player.game.board)
 
                 #IF ANY OF THESE ARE TRUE THEN THE GAME IS OVER
                 if winState == 1 or winState == 2 or winState == 3:
@@ -319,6 +327,8 @@ def handle_client(connectionSocket, addr):
 
                     p1.game = None
                     p2.game = None
+
+                    continue
 
 
                 # OTHERWISE THE GAME IS STILL GOING
