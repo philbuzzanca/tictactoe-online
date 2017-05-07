@@ -60,7 +60,10 @@ class ServerMessage:
 		self.message = message
 
 	def toString(self):
-		ret = self.userid+":"+str(self.destinationPort)
+		if self.userid is not None:
+			ret = self.userid+":"+str(self.destinationPort)
+		else:
+			ret = 'none:'+str(self.destinationPort)
 		if self.status is not None:
 			ret = ret + ":" + str(self.status)
 		if self.gameState is not None:
