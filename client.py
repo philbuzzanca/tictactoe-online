@@ -189,6 +189,7 @@ def serverHandler(clientSocket, fluff):
         #ELSE WAS 400 NOT OK MESSAGE
         else:
             print(serverPacket.message)
+            prompt()
 #---------------------------------------------
 # main ()
 #

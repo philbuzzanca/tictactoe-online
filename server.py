@@ -70,6 +70,12 @@ def clientExit(player, game):
     playerList.remove(player)
     playerListLock.release()
 
+    if player.game is not None:
+        if player.game.player1 == player:
+            p = player.game.player2
+            send(p.connectionSocket, p.name, serverPort, 400, 0, "Opponent disconnected")
+            p.game = None
+
     exit()
 
 def checkWinner(board):
@@ -88,6 +94,20 @@ def checkWinner(board):
         return 1
 
     #CHECK COLUMNS NEXT
+    elif board[0] == 1 and board[3] == 1 and board[6] == 1:
+        return 2
+    elif board[0] == 2 and board[3] == 2 and board[6] == 2:
+        return 1
+    elif board[1] == 1 and board[4] == 1 and board[7] == 1:
+        return 2
+    elif board[1] == 2 and board[4] == 2 and board[7] == 2:
+        return 1
+    elif board[2] == 1 and board[5] == 1 and board[8] == 1:
+        return 2
+    elif board[2] == 2 and board[5] == 2 and board[8] == 2:
+        return 1
+
+    #CHECK FOR DIAGNOLS NOW
     elif board[0] == 1 and board[4] == 1 and board[8] == 1:
         return 2
     elif board[0] == 2 and board[4] == 2 and board[8] == 2:
