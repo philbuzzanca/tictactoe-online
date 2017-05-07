@@ -27,6 +27,7 @@ def displayBoard(board):
         if i > 0 and i % 3 == 0:
             print()
         print(board[i], end=' ')
+    print()
 def isValidMove(move):
     intMov = None
     try:
@@ -37,8 +38,6 @@ def isValidMove(move):
         return False
     return True
 def readingFromStdin(buff):
-    print("Entering rdin")
-
     buff = stdin.readline()
     buff = buff.rstrip()
     print(buff)
@@ -59,7 +58,6 @@ def readingFromStdin(buff):
         except:
             buff = (str(buff), 0)
             length = 1
-
     return buff
 
 def sendDataToServer(socket, buff, log=True):
@@ -107,10 +105,13 @@ def sendDataToServer(socket, buff, log=True):
             print("MISSING ARGUMENT")
             dohelp()
     elif (buff[0] == 'who'):
-        dohelp()
+        message = ClientMessage(userId, serverPort, buff[0]).toString()
+        sendToServer(socket, message)
 
     elif (buff[0] == 'play'):
-        dohelp()
+        if(len(buff) > 1):
+            message = ClientMessage(userId, serverPort, buff[0], buff[1]).toString()
+            sendToServer(socket, message)
 
     elif (buff[0] == 'games'):
         message = ClientMessage(userId, serverPort, buff[0].toString())
@@ -166,7 +167,7 @@ def serverHandler(clientSocket, fluff):
 
         #MEANING SERVER SENT AN OK MESSAGE
         if (serverPacket.status == 200):
-            print(serverPacket.message)
+            # print(serverPacket.message)
 
             if serverPacket.gameState == 1 or serverPacket.gameState == 2:
                 if serverPacket.message == 'You are player 1':
@@ -201,7 +202,7 @@ def main():
     ticTactToeBoard = [0 for i in range(0,9)]
     displayBoard(ticTactToeBoard)
     serverName, serverPort = parse_args()
-    exit()
+
 
     #TRY CATCH BLOCK IN CASE ERROR IN ESTABLISHING SOCKET
     try:
