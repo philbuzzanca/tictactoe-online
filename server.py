@@ -176,6 +176,26 @@ def handle_client(connectionSocket, addr):
             message = ServerMessage(player.name,serverPort,'200',0,'Auto-matchmake? (Y/N)').toString()
             connectionSocket.send(message.encode())
 
+        elif clientMessage.command == 'play' and clientMessage.arg is not None:
+            playerListLock.acquire(blocking=True, timeout=-1)
+            for p in playerList:
+                if p.name == clientMessage.arg and p.isAvailable:
+                    p.isAvailable = False
+                    player.isAvailable = False
+
+                    game = Game(p, player)
+                    gameListLock.acquire(blocking=True, timeout=-1)
+                    gameList.append(game)
+                    gameListLock.release()
+
+                    p.game = game
+                    player.game = game
+
+                    send(p.connectionSocket, p.name, serverPort, 200, 1, 'You are player 1')
+                    send(player.connectionSocket, player.name, serverPort, 200, 1, 'You are player 2')
+                    break
+            playerListLock.release()
+
         elif clientMessage.command == "who":
             availablePlayers = list()
             playerListLock.acquire(blocking=True, timeout=-1)
