@@ -87,9 +87,10 @@ def sendDataToServer(socket, buff):
                 else:
                     isLoggedIn = True
                     displayMessage(serverPacket.message+"> ")
+                    prompt()
                     input = stdin.readline()
                     input = input.rstrip()
-                    if input == 'y':
+                    if input == 'y' or input == 'Y':
                         message = ClientMessage(userId, serverPort, 'matchmake', 'y').toString()
                     else:
                         message = ClientMessage(userId, serverPort, 'matchmake', 'n').toString()
@@ -127,7 +128,7 @@ def sendDataToServer(socket, buff):
     elif (buff[0] == 'games'):
         message = ClientMessage(userId, serverPort, buff[0]).toString()
         sendToServer(socket, message)
-    else:
+    else:   
         print("INVALID COMMAND")
         dohelp()
 
