@@ -7,6 +7,7 @@ import select
 import _thread
 from protocol import ClientMessage, ParseServerMessage
 
+isLoggedIn = False
 userId = None
 userNumber = None
 turnNumber = None
@@ -19,6 +20,7 @@ def prompt():
 
 def displayMessage(message):
     stdout.write(message)
+    print()
     stdout.flush()
 
 def displayBoard(board):
@@ -60,13 +62,14 @@ def readingFromStdin(buff):
             length = 1
     return buff
 
-def sendDataToServer(socket, buff, log=True):
+def sendDataToServer(socket, buff):
     global userId
     global serverPort
+    global isLoggedIn
     #message = None
     print(buff)
     if(buff[0] == 'login'):
-        if (log != True):
+        if (isLoggedIn != True):
             if(len(buff) > 1):
                 userId = buff[1]
                 message = ClientMessage(userId, serverPort, buff[0]).toString()
@@ -76,6 +79,7 @@ def sendDataToServer(socket, buff, log=True):
                 if(serverPacket.status == 400):
                     displayMessage('login failed')
                 else:
+                    isLoggedIn = True
                     displayMessage(serverPacket.message+"> ")
                     input = stdin.readline()
                     input = input.rstrip()
@@ -171,7 +175,6 @@ def serverHandler(clientSocket, fluff):
 
             if serverPacket.gameState == 1 or serverPacket.gameState == 2:
                 if serverPacket.message == 'You are player 1':
-
                     userNumber = 1
                 elif serverPacket.message == 'You are player 2':
                     userNumber = 2
@@ -201,6 +204,7 @@ def main():
     #GRAB COMMAND LINE ARGUMENTS
     userInput = ''   # to grab user's input
     #userId = ''
+    global isLoggedIn
     ticTactToeBoard = [0 for i in range(0,9)]
     displayBoard(ticTactToeBoard)
     serverName, serverPort = parse_args()
@@ -218,7 +222,7 @@ def main():
     #LOGIN PROCEDURE WITH SERVER FIRST BEFORE PROCEEDING
     prompt()
     userInput = readingFromStdin(userInput)
-    sendDataToServer(clientSocket, userInput, False)   #False means user is not logged in yet.
+    sendDataToServer(clientSocket, userInput)   #False means user is not logged in yet.
     #login_procedure(clientSocket)
 
     #INITIALIZE A THREAD TO LISTEN ON INPUT FROM SERVER
