@@ -107,7 +107,6 @@ def sendDataToServer(socket, buff, log=True):
     elif (buff[0] == 'who'):
         message = ClientMessage(userId, serverPort, buff[0]).toString()
         sendToServer(socket, message)
-
     elif (buff[0] == 'play'):
         if(len(buff) > 1):
             message = ClientMessage(userId, serverPort, buff[0], buff[1]).toString()
@@ -178,18 +177,18 @@ def serverHandler(clientSocket, fluff):
                     place = int(serverPacket.message)
                     ticTactToeBoard[place-1] = serverPacket.gameState
                     displayBoard(ticTactToeBoard)
-
             elif serverPacket.gameState == 3:
                 print(serverPacket.message)
                 #RESET BOARD ON END OF GAME
                 ticTactToeBoard = [0 for i in range(0,9)]
-
-
-
+            else:
+                displayMessage(serverPacket.message)
         #ELSE WAS 400 NOT OK MESSAGE
         else:
-            print(serverPacket.message)
-            prompt()
+            if(serverPacket.message == 'Opponent disconnected'):
+                print(serverPacket.message)
+                displayMessage("I suppose you are the winner.")
+                ticTactToeBoard = [0 for i in range(0, 9)]
 #---------------------------------------------
 # main ()
 #
