@@ -196,6 +196,10 @@ def handle_client(connectionSocket, addr):
         elif clientMessage.command == "place":
             num = int(clientMessage.arg)
 
+            if player.game == None:
+                send(connectionSocket, player.name, serverPort, '400', 0, 'not a legal move')
+                continue
+
             #CHECK IF LEGAL MOVE
             #CHECK IF IT IS THIS PLAYER'S TURN
             if player.game.board[num-1] == 0 and player.playerNum == player.game.turn:
@@ -230,6 +234,10 @@ def handle_client(connectionSocket, addr):
                         send(player.game.player2.connectionSocket, player.game.player2.name, serverPort, 200,
                              3,
                              'player 1 won')
+                    p1 = player.game.player1
+                    p2 = player.game.player2
+                    p1.game = None
+                    p2.game = None
 
 
                 # OTHERWISE THE GAME IS STILL GOING
@@ -264,8 +272,6 @@ if __name__ == "__main__":
 
         print("Time to accept a connection")
         connectionSocket, addr = serverSocket.accept()
-        # clientSockets.append(connectionSocket)
-        # clientAddresses.append(addr)
 
         _thread.start_new(handle_client, (connectionSocket, addr))
 
