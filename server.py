@@ -169,6 +169,7 @@ def handle_client(connectionSocket, addr):
             print("Exiting this thread")
             clientExit(player, game)
 
+        #HANDLE CLIENT LOGIN
         elif clientMessage.command == "login" and clientMessage.userid != None:
             print("New User: ", clientMessage.userid)
             player.name = clientMessage.userid
@@ -176,6 +177,7 @@ def handle_client(connectionSocket, addr):
             message = ServerMessage(player.name,serverPort,'200',0,'Auto-matchmake? (Y/N)').toString()
             connectionSocket.send(message.encode())
 
+        #HANDLE PLAY PLAYER FROM CLIENT
         elif clientMessage.command == 'play' and clientMessage.arg is not None:
             playerListLock.acquire(blocking=True, timeout=-1)
             for p in playerList:
@@ -196,6 +198,7 @@ def handle_client(connectionSocket, addr):
                     break
             playerListLock.release()
 
+        #RESPOND TO QUERY REQUEST OF WHO'S ON AND WHO IS AVAILABLE
         elif clientMessage.command == "who":
             availablePlayers = list()
             playerListLock.acquire(blocking=True, timeout=-1)
@@ -212,6 +215,7 @@ def handle_client(connectionSocket, addr):
                     players += str(p.name) + "\n"
                 send(connectionSocket, player.name, serverPort, '200', 0, players)
 
+        #RESPOND TO QUERY REQUEST OF ONGOING GAMES
         elif clientMessage.command == "games":
             gameListLock.acquire(blocking=True, timeout=-1)
             message = ""
@@ -225,6 +229,7 @@ def handle_client(connectionSocket, addr):
 
             send(player.connectionSocket, player.name, serverPort, 200, 0, message)
 
+        #RESPONSD TO ANSWER OF AUTOMATCH Y/N
         elif clientMessage.command == "matchmake":
             if clientMessage.arg == None:
                 send(connectionSocket, player.name, serverPort,'400', 0, 'matchmake')
@@ -261,9 +266,11 @@ def handle_client(connectionSocket, addr):
                 player.autoMatch = False
                 send(connectionSocket, player.name, serverPort, '200', 0, None)
 
+        #HANDLE PLACE SPOT CASE FROM CLIENT
         elif clientMessage.command == "place":
             num = int(clientMessage.arg)
 
+            #FIRST CHECK IF THERE IS A GAME WITH THIS PLAYER
             if player.game == None:
                 send(connectionSocket, player.name, serverPort, '400', 0, 'not a legal move')
                 continue
@@ -326,7 +333,7 @@ def handle_client(connectionSocket, addr):
                 send(player.game.player2.connectionSocket, player.game.player2.name, serverPort, 200, lastPlayerTurn,
                  str(num))
 
-            #ILLEGAL MOVE
+            #ILLEGAL MOVE OR COMMAND
             else:
                 send(connectionSocket, player.name, serverPort, '400', player.game.turn, 'not a legal move')
 
