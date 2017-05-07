@@ -120,8 +120,8 @@ def sendDataToServer(socket, buff):
             sendToServer(socket, message)
 
     elif (buff[0] == 'games'):
-        message = ClientMessage(userId, serverPort, buff[0].toString())
-        #games
+        message = ClientMessage(userId, serverPort, buff[0]).toString()
+        sendToServer(socket, message)
     else:
         print("INVALID COMMAND")
         dohelp()
@@ -199,6 +199,7 @@ def serverHandler(clientSocket, fluff):
                 print(serverPacket.message)
                 displayMessage("I suppose you are the winner.")
                 ticTactToeBoard = [0 for i in range(0, 9)]
+            
 #---------------------------------------------
 # main ()
 #
