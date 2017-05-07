@@ -160,6 +160,7 @@ def parse_args():
 def serverHandler(clientSocket, fluff):
     global userNumber, ticTactToeBoard
     while True:
+        prompt()
         #SELECT AND WAIT ON CLIENT SOCKET
         select.select([clientSocket], [], [], None)
         serverPacket = ParseServerMessage(clientSocket.recv(1024).decode())
@@ -170,6 +171,7 @@ def serverHandler(clientSocket, fluff):
 
             if serverPacket.gameState == 1 or serverPacket.gameState == 2:
                 if serverPacket.message == 'You are player 1':
+
                     userNumber = 1
                 elif serverPacket.message == 'You are player 2':
                     userNumber = 2
@@ -181,7 +183,7 @@ def serverHandler(clientSocket, fluff):
                 print(serverPacket.message)
                 #RESET BOARD ON END OF GAME
                 ticTactToeBoard = [0 for i in range(0,9)]
-            else:
+            elif serverPacket.message is not None:
                 displayMessage(serverPacket.message)
         #ELSE WAS 400 NOT OK MESSAGE
         else:
