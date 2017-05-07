@@ -14,7 +14,7 @@ serverPort = None
 ticTactToeBoard = None
 
 def prompt():
-    stdout.write('$: ')
+    stdout.write('\n$: ')
     stdout.flush()
 
 def displayMessage(message):

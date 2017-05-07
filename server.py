@@ -5,8 +5,6 @@ import argparse
 from sys import exit
 import select
 import _thread
-import re
-import array
 from protocol import ParseClientMessage, ServerMessage
 import threading
 
@@ -75,6 +73,11 @@ def clientExit(player, game):
             p = player.game.player2
             send(p.connectionSocket, p.name, serverPort, 400, 0, "Opponent disconnected")
             p.game = None
+        else:
+            p = player.game.player1
+            send(p.connectionSocket, p.name, serverPort, 400, 0, "Opponent disconnected")
+            p.game = None
+
 
     exit()
 
@@ -178,7 +181,7 @@ def handle_client(connectionSocket, addr):
             else:
                 players = ""
                 for p in availablePlayers:
-                    players += str(p.name) + ","
+                    players += str(p.name) + "\n"
                 send(connectionSocket, player.name, serverPort, '200', 0, players)
 
         elif clientMessage.command == "matchmake":
@@ -247,6 +250,7 @@ def handle_client(connectionSocket, addr):
                         send(player.game.player2.connectionSocket, player.game.player2.name, serverPort, 200,
                              3,
                              'player 2 won')
+                    # PLAYER 1 WON
                     else:
                         send(player.game.player1.connectionSocket, player.game.player1.name, serverPort, 200,
                              3,
