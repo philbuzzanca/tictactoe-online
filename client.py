@@ -178,8 +178,10 @@ def serverHandler(clientSocket, fluff):
 
             if serverPacket.gameState == 1 or serverPacket.gameState == 2:
                 if serverPacket.message == 'You are player 1':
+                    print(serverPacket.message)
                     userNumber = 1
                 elif serverPacket.message == 'You are player 2':
+                    print(serverPacket.message)
                     userNumber = 2
                 else:
                     place = int(serverPacket.message)

@@ -10,6 +10,7 @@ import threading
 
 #LOCKS FOR SHARED LISTS
 playerListLock = threading.Lock()
+gameListLock = threading.Lock()
 
 #CLASSES FOR GAMES AND PLAYERS
 class Game(object):
@@ -68,13 +69,20 @@ def clientExit(player, game):
     playerList.remove(player)
     playerListLock.release()
 
+    #CASE OF DISCONNECT MID GAME
     if player.game is not None:
+        gameListLock.acquire(blocking=True, timeout=-1)
+        gameList.remove(player.game)
+        gameListLock.release()
+
         if player.game.player1 == player:
             p = player.game.player2
+            p.isAvailable = True
             send(p.connectionSocket, p.name, serverPort, 400, 0, "Opponent disconnected")
             p.game = None
         else:
             p = player.game.player1
+            p.isAvailable = True
             send(p.connectionSocket, p.name, serverPort, 400, 0, "Opponent disconnected")
             p.game = None
 
@@ -184,6 +192,17 @@ def handle_client(connectionSocket, addr):
                     players += str(p.name) + "\n"
                 send(connectionSocket, player.name, serverPort, '200', 0, players)
 
+        elif clientMessage.command == "games":
+            gameListLock.acquire(blocking=True, timeout=-1)
+            message = ""
+            i = 0
+            for game in gameList:
+                message += 'Game ' + str(i) + ': '
+                message += game.player1.name + ', ' + game.player2.name + '\n'
+            gameListLock.release()
+
+            send(player.connectionSocket, player.name, serverPort, 200, 0, message)
+
         elif clientMessage.command == "matchmake":
             if clientMessage.arg == None:
                 send(connectionSocket, player.name, serverPort,'400', 0, 'matchmake')
@@ -203,6 +222,10 @@ def handle_client(connectionSocket, addr):
                         player.playerNum = 2
 
                         game = Game(opponent, player)
+
+                        gameListLock.acquire(blocking=True, timeout=-1)
+                        gameList.append(game)
+                        gameListLock.release()
 
                         opponent.game = game
                         player.game = game
@@ -260,6 +283,11 @@ def handle_client(connectionSocket, addr):
                              'player 1 won')
                     p1 = player.game.player1
                     p2 = player.game.player2
+
+                    gameListLock.acquire(blocking=True, timeout=-1)
+                    gameList.remove(p1.game)
+                    gameListLock.release()
+
                     p1.game = None
                     p2.game = None
 
