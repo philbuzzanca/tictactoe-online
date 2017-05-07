@@ -83,7 +83,10 @@ def sendDataToServer(socket, buff):
                     displayMessage(serverPacket.message+"> ")
                     input = stdin.readline()
                     input = input.rstrip()
-                    message = ClientMessage(userId, serverPort, 'matchmake', input).toString()
+                    if input == 'y':
+                        message = ClientMessage(userId, serverPort, 'matchmake', 'y').toString()
+                    else:
+                        message = ClientMessage(userId, serverPort, 'matchmake', 'n').toString()
                     sendToServer(socket, message)
             else:
                 displayMessage("MISSING ARGUMENT")
