@@ -231,6 +231,7 @@ def handle_client(connectionSocket, addr):
             for game in gameList:
                 message += 'Game ' + str(i) + ' - '
                 message += game.player1.name + ', ' + game.player2.name + '\n'
+                i += 1
             if message == "":
                 message = "No Games currently.\n"
             gameListLock.release()
