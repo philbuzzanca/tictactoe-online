@@ -180,7 +180,10 @@ def serverHandler(clientSocket, fluff):
         prompt()
         #SELECT AND WAIT ON CLIENT SOCKET
         select.select([clientSocket], [], [], None)
-        serverPacket = ParseServerMessage(clientSocket.recv(1024).decode())
+        try:
+            serverPacket = ParseServerMessage(clientSocket.recv(1024).decode())
+        except:
+            _thread.exit_thread()
         #MEANING SERVER SENT AN OK MESSAGE
         if (serverPacket.status == 200):
             # print(serverPacket.message)
