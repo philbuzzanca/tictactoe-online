@@ -1,4 +1,7 @@
 # Stony Brook University CSE 310 Final Project
+# Nauman Shahzad
+# Thierno Bah
+# Philip Buzzanca
 
 ## Just unzip the ZIP file to get the server.py, client.py, and protocol.py files
 
