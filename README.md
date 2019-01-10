@@ -1,7 +1,4 @@
-# Group number 32
-# Nauman Shahzad
-# Thierno Bah
-# Philip Buzzanca
+# Stony Brook University CSE 310 Final Project
 
 ## Just unzip the ZIP file to get the server.py, client.py, and protocol.py files
 
